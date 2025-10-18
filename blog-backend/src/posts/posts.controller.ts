@@ -15,9 +15,16 @@ export class PostsController {
   @Get()
   async findAll(
     @Query('page') page = 1,
-    @Query('limit') limit = 9
+    @Query('limit') limit = 9,
+    @Query('tags') tags?: string | string[],
   ) {
-    return this.postsService.findAll(+page, +limit);
+    const raw = Array.isArray(tags)
+    ? tags
+    : typeof tags === 'string'
+      ? tags.split(',').map(t => t.trim()).filter(Boolean)
+      : [];
+
+    return this.postsService.findAll(+page, +limit, raw);
   }
 
   @Get(':id')

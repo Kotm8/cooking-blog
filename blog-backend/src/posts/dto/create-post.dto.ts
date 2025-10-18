@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, Length } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
+import { TagEnum } from '../entities/tag.enum';
 
 export class CreatePostDto {
     @IsString()
@@ -12,4 +13,8 @@ export class CreatePostDto {
     @IsString()
     @IsOptional()
     description: string;
+
+    @IsOptional()
+    @IsEnum(TagEnum, { each: true })
+    tags?: TagEnum[];
 }

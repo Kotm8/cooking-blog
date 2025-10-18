@@ -1,4 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { TagEnum } from './tag.enum';
+
 
 @Entity()
 export class Post {
@@ -10,6 +12,9 @@ export class Post {
 
   @Column({ type: 'text', nullable: true, default: null })
   description?: string;
+
+  @Column({ type: 'enum', enum: TagEnum, array: true, default: [] })
+  tags: TagEnum[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

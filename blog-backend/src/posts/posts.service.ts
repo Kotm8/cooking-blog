@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './entities/post.entity';
 import { Repository } from 'typeorm';
+import { TagEnum } from './entities/tag.enum';
 
 @Injectable()
 export class PostsService {
@@ -15,9 +16,11 @@ export class PostsService {
   async create(createPostDto: CreatePostDto) {
     const title = createPostDto.title;
     const description = createPostDto.description;
+    const tags = createPostDto.tags;
     const post = this.postRepo.create({
       title,
-      description
+      description,
+      tags
     });
     await this.postRepo.save(post);
     return {
@@ -25,33 +28,44 @@ export class PostsService {
     }
   }
 
-  async findAll(page = 1, limit = 9) {
+  async findAll(page = 1, limit = 9, tags: string[] = []) {
     page = Math.max(1, Number(page) || 1);
     limit = Math.min(100, Math.max(1, Number(limit) || 9));
 
-    const [data, total] = await this.postRepo.findAndCount({
-    order: { createdAt: 'DESC' },
-    select: ['id', 'title', 'description', 'createdAt'],
-    skip: (page - 1) * limit,
-    take: limit,
-  });
+    const qb = this.postRepo
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.title', 'post.description', 'post.createdAt', 'post.tags'])
+      .orderBy('post.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+    if (tags.length) {
+      const allowed = new Set(Object.values(TagEnum));
+      const invalid = tags.filter(t => !allowed.has(t as TagEnum));
+      if (invalid.length) {
+        throw new BadRequestException(`Unknown tags: ${invalid.join(', ')}`);
+      }
+
+      qb.andWhere('(post.tags)::text[] @> ARRAY[:...tags]::text[]', { tags });
+    }
+
+    const [data, total] = await qb.getManyAndCount();
     return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      hasPrev: page > 1,
-      hasNext: page * limit < total,
-    },
-  };
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasPrev: page > 1,
+        hasNext: page * limit < total,
+      },
+    };
   }
 
   async findOne(postId: number) {
     return this.postRepo.findOne({
       where: { id: postId },
-      select: ['id', 'title', 'description', 'createdAt', 'updatedAt'],
+      select: ['id', 'title', 'description', 'tags', 'createdAt', 'updatedAt'],
     });
   }
 

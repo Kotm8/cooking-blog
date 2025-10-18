@@ -20,13 +20,14 @@ const closeUpdaterBtn = document.getElementById('closeUpdaterBtn');
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageNumber = document.getElementById('pageNumber');
-
+const inputTags = document.getElementById('inputTags');
 const url = 'http://localhost:3000/posts';
 let currentID = 1;
 
 
 let currentPage = 1;
 const limit = 9;
+tags = [];
 
 
 function setPagerState(meta) {
@@ -38,7 +39,7 @@ function setPagerState(meta) {
 }
 
 const fetchAllToDisplay = (page = 1) => {
-  fetch(`${url}?page=${page}&limit=${limit}`)
+  fetch(`${url}?page=${page}&limit=${limit}&tags=${tags.toString()}`)
     .then(response => response.json())
     .then(result => {
       const posts = Array.isArray(result) ? result : result.data;
@@ -109,6 +110,20 @@ nextPageBtn.addEventListener('click', () => {
 
 showCreatorBtn.addEventListener('click', () => {
   postCreatorContainer.style.display = 'flex';
+});
+
+inputTags.addEventListener('input', () => {
+  tags = inputTags.value
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
+
+});
+inputTags.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault(); 
+    fetchAllToDisplay();
+  }
 });
 
 closeCreatorBtn.addEventListener('click', () => {
